@@ -35,8 +35,8 @@
 <p>&nbsp;<img align="center" src="https://github-readme-stats.vercel.app/api?username=chainner190&show_icons=true&locale=en" alt="chainner190" /></p>
 
 <p><img align="center" src="https://github-readme-streak-stats.herokuapp.com/?user=chainner190&" alt="chainner190" /></p>
-HOW TO INSTALL & USE
-```sh
+**HOW TO INSTALL & USE**
+```console
  apt-get update
  apt-get install nodejs
  npm install chalk
