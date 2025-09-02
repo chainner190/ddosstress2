@@ -19,6 +19,19 @@
 
 <p align="left"> <img src="https://komarev.com/ghpvc/?username=chainner190&label=Profile%20views&color=0e75b6&style=flat" alt="chainner190" /> </p>
 
+**HOW TO INSTALL & USE**
+```console
+ apt-get update
+ apt-get install nodejs
+ npm install chalk
+ npm install figlet
+ npm install gradient-string
+ npm install raw-socket
+ git clone https://github.com/chainner190/ddosstress2
+ node ddosstress2.js <Url> <Thread> <duration> --layer <layer4/layer7>
+
+```
+
 <p align="left"> <a href="https://github.com/ryo-ma/github-profile-trophy"><img src="https://github-profile-trophy.vercel.app/?username=chainner190" alt="chainner190" /></a> </p>
 
 <p align="left"> <a href="https://twitter.com/" target="blank"><img src="https://img.shields.io/twitter/follow/?logo=twitter&style=for-the-badge" alt="" /></a> </p>
@@ -35,15 +48,3 @@
 <p>&nbsp;<img align="center" src="https://github-readme-stats.vercel.app/api?username=chainner190&show_icons=true&locale=en" alt="chainner190" /></p>
 
 <p><img align="center" src="https://github-readme-streak-stats.herokuapp.com/?user=chainner190&" alt="chainner190" /></p>
-**HOW TO INSTALL & USE**
-```console
- apt-get update
- apt-get install nodejs
- npm install chalk
- npm install figlet
- npm install gradient-string
- npm install raw-socket
- git clone https://github.com/chainner190/ddosstress2
- node ddosstress2.js <Url> <Thread> <duration> --layer <layer4/layer7>
-
-```
