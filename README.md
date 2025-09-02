@@ -21,14 +21,14 @@
 
 **HOW TO INSTALL & USE**
 ```console
- apt-get update
- apt-get install nodejs
- npm install chalk
- npm install figlet
- npm install gradient-string
- npm install raw-socket
- git clone https://github.com/chainner190/ddosstress2
- node ddosstress2.js <Url> <Thread> <duration> --layer <layer4/layer7>
+   apt-get update
+   apt-get install nodejs
+   npm install chalk
+   npm install figlet
+   npm install gradient-string
+   npm install raw-socket
+   git clone https://github.com/chainner190/ddosstress2
+   node ddosstress2.js <Url> <Thread> <duration> --layer <layer4/layer7>
 
 ```
 
