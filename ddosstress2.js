@@ -23,7 +23,6 @@ const proxies = fs.readFileSync("./proxy.txt", "utf-8")
   .split("\n")
   .filter(line => line.trim().length > 0);
 
-// ✅ fungsi randomUA()
 function randomUA() {
   return userAgents[Math.floor(Math.random() * userAgents.length)] || "Mozilla/5.0";
 }
@@ -149,7 +148,6 @@ if (cluster.isPrimary) {
   }
 }
 
-// 🔥 fungsi cek status website via isitdown.me
 async function checkWebsiteStatus(domain) {
   return new Promise((resolve) => {
     const data = `domain=${encodeURIComponent(domain)}`;
