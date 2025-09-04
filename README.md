@@ -13,14 +13,14 @@
 </p>
 <img src="https://github.com/TheDudeThatCode/TheDudeThatCode/blob/master/Assets/Developer.gif" alt="Mario Game" width="600" />
 <div align="center">
-<h1 align="center">DDOSSTRESS - DDoS Attack Script support L4-L7</h1>
+<h1 align="center">DDOSSTRESS - DDoS Attack Script support L7</h1>
 
 <h3 align="center">A passionate frontend developer from Indonesia</h3>
 
 <p align="left"> <img src="https://komarev.com/ghpvc/?username=chainner190&label=Profile%20views&color=0e75b6&style=flat" alt="chainner190" /> </p>
 
 **HOW TO INSTALL & USE**
-```console
+````console
    apt-get update
    apt-get install nodejs
    npm install chalk
@@ -34,7 +34,7 @@
    git clone https://github.com/chainner190/ddosstress2
    node ddosstress2.js <Url> <Thread> <duration> --layer <layer4/layer7>
 
-```
+````
 
 <p align="left"> <a href="https://github.com/ryo-ma/github-profile-trophy"><img src="https://github-profile-trophy.vercel.app/?username=chainner190" alt="chainner190" /></a> </p>
 
