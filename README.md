@@ -27,6 +27,10 @@
    npm install figlet
    npm install gradient-string
    npm install raw-socket
+   python3 install.py
+   python3  nvminstall.py
+   python3 scrape.py
+   node usercreate.js
    git clone https://github.com/chainner190/ddosstress2
    node ddosstress2.js <Url> <Thread> <duration> --layer <layer4/layer7>
 
