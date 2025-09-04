@@ -20,7 +20,7 @@
 <p align="left"> <img src="https://komarev.com/ghpvc/?username=chainner190&label=Profile%20views&color=0e75b6&style=flat" alt="chainner190" /> </p>
 
 **HOW TO INSTALL & USE**
-```
+```console
    apt-get update
    apt-get install nodejs
    npm install chalk
